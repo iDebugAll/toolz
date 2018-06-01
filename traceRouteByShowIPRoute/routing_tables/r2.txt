@@ -1,0 +1,17 @@
+     10.0.0.0/32 is subnetted, 1 subnets
+C       10.1.1.1 is directly connected, Loopback1
+          1.0.0.0/32 is subnetted, 1 subnets
+D        1.1.1.1 [90/130816] via 172.16.10.1, 00:00:30, GigabitEthernet1/0
+          2.0.0.0/32 is subnetted, 1 subnets
+C        2.2.2.2 is directly connected, Loopback2
+        172.16.0.0/16 is variably subnetted, 2 subnets, 2 masks
+C    172.16.10.0/30 is directly connected, GigabitEthernet1/0
+L    172.16.10.2/32 is directly connected, GigabitEthernet1/0
+C    10.220.88.0/30 is directly connected, GigabitEthernet2/0
+L    10.220.88.1/32 is directly connected, GigabitEthernet2/0
+C    10.14.88.0/24 is directly connected, GigabitEthernet14/88
+L    10.14.88.2/32 is directly connected, GigabitEthernet14/88
+S       10.3.3.3 [1/0] via 10.14.88.3
+S       10.5.5.5 [1/0] via 10.14.88.3
+                 [1/0] via 10.14.88.4
+
