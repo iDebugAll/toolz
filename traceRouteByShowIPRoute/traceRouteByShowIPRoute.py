@@ -54,8 +54,8 @@ REGEXP_VIA_PORTION = re.compile('.*via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?
 # Format:
 #
 # ROUTERS = {
-#     'RID1': {'routingTable': {}},
-#     'RID_N': {'routingTable': {}},
+#     'RID1': {'routingTable': {}, 'interfaceList': ()},
+#     'RID_N': {'routingTable': {}, 'interfaceList': ()},
 # }
 # 
 ROUTERS = {}
@@ -71,7 +71,6 @@ GLOBAL_INTERFACE_TREE = SubnetTree.SubnetTree()
 # Builds internal SubnetTree search tree in 'routeTree' object.
 # routeTree key is Network Prefix, value is list of nexthops.
 #
-# Populates global GLOBAL_INTERFACE_TREE.
 # Returns 'router' dictionary object.
 # Format:
 # 
@@ -84,6 +83,7 @@ def parseShowIPRoute(showIPRouteOutput):
 
     router = {}
     routeTree = SubnetTree.SubnetTree()
+    interfaceList = []
 
     # Parse Local and Connected route strings in text.
     connectedAndLocalRoutesFound = False
@@ -92,7 +92,7 @@ def parseShowIPRoute(showIPRouteOutput):
         interface = m.group('interface')
         routeTree[subnet] = (interface,)
         if m.group('routeType') == 'L':
-            GLOBAL_INTERFACE_TREE[subnet]= (FILENAME, interface,)
+            interfaceList.append((interface, subnet,))
         connectedAndLocalRoutesFound = True
 
     if not connectedAndLocalRoutesFound:
@@ -114,6 +114,7 @@ def parseShowIPRoute(showIPRouteOutput):
 
     router = {
         'routingTable': routeTree,
+        'interfaceList': interfaceList,
     }
 
     return router
@@ -196,7 +197,7 @@ if not os.path.exists(RT_DIRECTORY):
 print("Initializing files...")
 starttime = time()
 
-# Go through RT_DIRECTORY and parses all .txt files.
+# Go through RT_DIRECTORY and parse all .txt files.
 # Generate router objects based on parse result if any.
 # Populate ROUTERS with those router objects.
 # Default key for each router object is FILENAME.
@@ -208,8 +209,12 @@ for FILENAME in os.listdir(RT_DIRECTORY):
             print 'Opening ', FILENAME
             rawTable = f.read()
             newRouter = parseShowIPRoute(rawTable)
+            routerID = FILENAME.replace('.txt', '')
             if newRouter:
-                ROUTERS[FILENAME] = newRouter
+                ROUTERS[routerID] = newRouter
+                if newRouter['interfaceList']:
+                    for iface, addr in newRouter['interfaceList']:
+                        GLOBAL_INTERFACE_TREE[addr]= (routerID, iface,)
             else:
                 print ('Failed to parse ' + FILENAME)
         print FILENAME + " parsing has been completed in %s sec" % ("{:.3f}".format(time() - fileinitstarttime),)
