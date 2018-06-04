@@ -87,11 +87,11 @@ def parseShowIPRoute(showIPRouteOutput):
 
     # Parse Local and Connected route strings in text.
     connectedAndLocalRoutesFound = False
-    for m in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(showIPRouteOutput):
-        subnet = m.group('ipaddress') + formatNetmaskToPrefixLength(m.group('maskOrPrefixLength'))
-        interface = m.group('interface')
-        routeTree[subnet] = (interface,)
-        if m.group('routeType') == 'L':
+    for rawRouteString in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(showIPRouteOutput):
+        subnet = rawRouteString.group('ipaddress') + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+        interface = rawRouteString.group('interface')
+        routeTree[subnet] = ((interface,), rawRouteString.group(0))
+        if rawRouteString.group('routeType') == 'L':
             interfaceList.append((interface, subnet,))
         connectedAndLocalRoutesFound = True
 
@@ -100,9 +100,9 @@ def parseShowIPRoute(showIPRouteOutput):
         return None
 
     # parse static and dynamic route strings in text
-    for m in REGEXP_ROUTE.finditer(showIPRouteOutput):
-        subnet = m.group('subnet') + formatNetmaskToPrefixLength(m.group('maskOrPrefixLength'))
-        viaPortion =  m.group('viaPortion')
+    for rawRouteString in REGEXP_ROUTE.finditer(showIPRouteOutput):
+        subnet = rawRouteString.group('subnet') + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+        viaPortion =  rawRouteString.group('viaPortion')
         nextHops= []
         if viaPortion.count('via') > 1:
             for line in viaPortion.split('\n'):
@@ -110,7 +110,7 @@ def parseShowIPRoute(showIPRouteOutput):
                     nextHops.append(REGEXP_VIA_PORTION.match(line).group(1))
         else:
             nextHops.append(REGEXP_VIA_PORTION.match(viaPortion).group(1))
-        routeTree[subnet] = nextHops
+        routeTree[subnet] = (nextHops, rawRouteString.group(0))
 
     router = {
         'routingTable': routeTree,
@@ -140,7 +140,7 @@ def routeLookup(destination, router):
         nextHop = router['routingTable'][destination]
         return nextHop
     else:
-        return None
+        return (None, None)
 
 # Returns RouterID by Interface IP address which it belongs to.
 def getRIDByInterface(interface):
@@ -167,11 +167,11 @@ def nextHopIsLocal(nextHop):
 # Each path tupple contains a sequence of Router IDs.
 # Multiple paths are supported.
 def traceRoute(sourceRouterID, target, path=[]):
-    path = path + [sourceRouterID]
     if not sourceRouterID:
-        return [path]
+        return [path + [(None, None)]]
     currentRouter = ROUTERS[sourceRouterID]
-    nextHop = routeLookup(target, currentRouter)
+    nextHop, rawRouteString = routeLookup(target, currentRouter)
+    path = path + [(sourceRouterID, rawRouteString)]
     #print nextHop
     paths = []
     if nextHop:
@@ -248,8 +248,17 @@ while True:
         if result:
             print "\n"
             print "PATHS TO %s FROM %s" % (targetSubnet, rtr)
+            n = 1
+            print 'Detailed info:'
             for r in result:
-                print r
+                print "Path %s:" % n
+                print [h[0] for h in r]
+                for hop in r:
+                    print "ROUTER:", hop[0]
+                    print "Matched route string: \n", hop[1]
+                else:
+                    print '\n'
+                n+=1
             else:
                 print "Path search on %s has been completed in %s sec" % (rtr, "{:.3f}".format(time() - subsearchstarttime))
     else:
