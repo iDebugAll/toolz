@@ -25,7 +25,8 @@ REGEXP_ROUTE_LOCAL_CONNECTED = re.compile(
      '^(?P<routeType>[L|C])\s+'
     + '((?P<ipaddress>\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)'
     + '\s?'
-    + '(?P<maskOrPrefixLength>(\/\d\d?)?|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
+    + '(?P<maskOrPrefixLength>(\/\d\d?)?'
+    + '|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
     + '\ is\ directly\ connected\,\ '
     + '(?P<interface>\S+)',
     re.MULTILINE
@@ -37,14 +38,18 @@ REGEXP_ROUTE = re.compile(
     + '\s+'
     + '((?P<subnet>\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)'
     + '\s?'
-    + '(?P<maskOrPrefixLength>(\/\d\d?)?|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
+    + '(?P<maskOrPrefixLength>(\/\d\d?)?'
+    +'|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
     + '\s*'
-    + '(?P<viaPortion>(?:\n?\s+(\[\d\d?\d?\/\d+\])\s+via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)(.*)\n?)+)',
+    + '(?P<viaPortion>(?:\n?\s+(\[\d\d?\d?\/\d+\])\s+'
+    + 'via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)(.*)\n?)+)',
     re.MULTILINE
 )
 
 # Route string VIA portion matching.
-REGEXP_VIA_PORTION = re.compile('.*via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?).*')
+REGEXP_VIA_PORTION = re.compile(
+    '.*via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?).*'
+)
 
 
 # Store for 'router' objects generated from input routing table files. 
@@ -78,30 +83,33 @@ GLOBAL_INTERFACE_TREE = SubnetTree.SubnetTree()
 #   'routingTable': routeTree
 # }
 #
-# Compatible with both Cisco IOS(IOS-XE) 'show ip route' and Cisco ASA 'show route' output format.
+# Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
+# and Cisco ASA 'show route' output format.
 def parseShowIPRoute(showIPRouteOutput):
-
     router = {}
     routeTree = SubnetTree.SubnetTree()
     interfaceList = []
-
     # Parse Local and Connected route strings in text.
     connectedAndLocalRoutesFound = False
     for rawRouteString in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(showIPRouteOutput):
-        subnet = rawRouteString.group('ipaddress') + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+        subnet = (
+              rawRouteString.group('ipaddress') 
+            + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+        )
         interface = rawRouteString.group('interface')
         routeTree[subnet] = ((interface,), rawRouteString.group(0))
         if rawRouteString.group('routeType') == 'L':
             interfaceList.append((interface, subnet,))
         connectedAndLocalRoutesFound = True
-
     if not connectedAndLocalRoutesFound:
         print('Failed to find routing table entries in given output')
         return None
-
     # parse static and dynamic route strings in text
     for rawRouteString in REGEXP_ROUTE.finditer(showIPRouteOutput):
-        subnet = rawRouteString.group('subnet') + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+        subnet = (
+              rawRouteString.group('subnet') 
+            + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+        )
         viaPortion =  rawRouteString.group('viaPortion')
         nextHops= []
         if viaPortion.count('via') > 1:
@@ -111,12 +119,10 @@ def parseShowIPRoute(showIPRouteOutput):
         else:
             nextHops.append(REGEXP_VIA_PORTION.match(viaPortion).group(1))
         routeTree[subnet] = (nextHops, rawRouteString.group(0))
-
     router = {
         'routingTable': routeTree,
         'interfaceList': interfaceList,
     }
-
     return router
 
 # Gets subnet mask or slashed prefix length
@@ -145,10 +151,7 @@ def routeLookup(destination, router):
 # Returns RouterID by Interface IP address which it belongs to.
 def getRIDByInterface(interface):
     if interface in GLOBAL_INTERFACE_TREE:
-        rid = GLOBAL_INTERFACE_TREE[interface][0]
-        return rid
-    else:
-        return None
+        return GLOBAL_INTERFACE_TREE[interface][0]
 
 # Check if nexthop points to local interface.
 # Valid for Connected and Local route strings.
@@ -159,8 +162,6 @@ def nextHopIsLocal(nextHop):
     for type in interfaceTypes:
         if nextHop.startswith(type):
             return True
-    return False
-
 
 # Performs recursive path search from source Router ID (RID) to target subnet.
 # Returns tupple of path tupples.
