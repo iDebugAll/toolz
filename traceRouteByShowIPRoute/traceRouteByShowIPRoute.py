@@ -147,8 +147,7 @@ def convert_netmask_to_prefix_length(rawMaskOrPrefixLength):
 def route_lookup(destination, router):
     #print router
     if destination in router['routingTable']:
-        nextHop = router['routingTable'][destination]
-        return nextHop
+        return router['routingTable'][destination]
     else:
         return (None, None)
 
