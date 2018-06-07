@@ -131,13 +131,17 @@ def parse_show_ip_route_ios_like(showIPRouteOutput):
 # Returns slashed prefix length format for subnet mask case.
 # Returns slashed prefix length as is for slashed prefix length case.
 # Returns "" for empty input.
-def convert_netmask_to_prefix_length(rawMaskOrPrefixLength):
-    if not rawMaskOrPrefixLength:
+def convert_netmask_to_prefix_length(mask_or_pref):
+    if not mask_or_pref:
         return ""
-    if re.match("^\/\d\d?$", rawMaskOrPrefixLength):
-        return rawMaskOrPrefixLength
-    if re.match("^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$", rawMaskOrPrefixLength):
-        return "/" + str(sum([bin(int(x)).count("1") for x in rawMaskOrPrefixLength.split(".")]))
+    if re.match("^\/\d\d?$", mask_or_pref):
+        return mask_or_pref
+    if re.match("^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$",
+                mask_or_pref):
+        return (
+            "/"
+           + str(sum([bin(int(x)).count("1") for x in mask_or_pref.split(".")]))
+        )
     return ""
 
 # Performs routeTree lookup in passed router object for passed destination subnet.
