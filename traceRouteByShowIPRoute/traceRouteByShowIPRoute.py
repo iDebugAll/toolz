@@ -90,7 +90,6 @@ def parse_show_ip_route_ios_like(showIPRouteOutput):
     routeTree = SubnetTree.SubnetTree()
     interfaceList = []
     # Parse Local and Connected route strings in text.
-    connectedAndLocalRoutesFound = False
     for rawRouteString in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(showIPRouteOutput):
         subnet = (
             rawRouteString.group('ipaddress') 
@@ -102,8 +101,7 @@ def parse_show_ip_route_ios_like(showIPRouteOutput):
         routeTree[subnet] = ((interface,), rawRouteString.group(0))
         if rawRouteString.group('routeType') == 'L':
             interfaceList.append((interface, subnet,))
-        connectedAndLocalRoutesFound = True
-    if not connectedAndLocalRoutesFound:
+    if not interfaceList:
         print('Failed to find routing table entries in given output')
         return None
     # parse static and dynamic route strings in text
@@ -145,7 +143,6 @@ def convert_netmask_to_prefix_length(rawMaskOrPrefixLength):
 # Performs routeTree lookup in passed router object for passed destination subnet.
 # Returns list of nexthops.
 def route_lookup(destination, router):
-    #print router
     if destination in router['routingTable']:
         return router['routingTable'][destination]
     else:
