@@ -85,7 +85,7 @@ GLOBAL_INTERFACE_TREE = SubnetTree.SubnetTree()
 #
 # Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
 # and Cisco ASA 'show route' output format.
-def parseShowIPRoute(showIPRouteOutput):
+def parse_show_ip_route_ios_like(showIPRouteOutput):
     router = {}
     routeTree = SubnetTree.SubnetTree()
     interfaceList = []
@@ -93,8 +93,10 @@ def parseShowIPRoute(showIPRouteOutput):
     connectedAndLocalRoutesFound = False
     for rawRouteString in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(showIPRouteOutput):
         subnet = (
-              rawRouteString.group('ipaddress') 
-            + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+            rawRouteString.group('ipaddress') 
+          + convert_netmask_to_prefix_length(
+                rawRouteString.group('maskOrPrefixLength')
+            )
         )
         interface = rawRouteString.group('interface')
         routeTree[subnet] = ((interface,), rawRouteString.group(0))
@@ -107,8 +109,10 @@ def parseShowIPRoute(showIPRouteOutput):
     # parse static and dynamic route strings in text
     for rawRouteString in REGEXP_ROUTE.finditer(showIPRouteOutput):
         subnet = (
-              rawRouteString.group('subnet') 
-            + formatNetmaskToPrefixLength(rawRouteString.group('maskOrPrefixLength'))
+            rawRouteString.group('subnet') 
+          + convert_netmask_to_prefix_length(
+                rawRouteString.group('maskOrPrefixLength')
+            )
         )
         viaPortion =  rawRouteString.group('viaPortion')
         nextHops= []
@@ -129,7 +133,7 @@ def parseShowIPRoute(showIPRouteOutput):
 # Returns slashed prefix length format for subnet mask case.
 # Returns slashed prefix length as is for slashed prefix length case.
 # Returns "" for empty input.
-def formatNetmaskToPrefixLength(rawMaskOrPrefixLength):
+def convert_netmask_to_prefix_length(rawMaskOrPrefixLength):
     if not rawMaskOrPrefixLength:
         return ""
     if re.match("^\/\d\d?$", rawMaskOrPrefixLength):
@@ -140,7 +144,7 @@ def formatNetmaskToPrefixLength(rawMaskOrPrefixLength):
 
 # Performs routeTree lookup in passed router object for passed destination subnet.
 # Returns list of nexthops.
-def routeLookup(destination, router):
+def route_lookup(destination, router):
     #print router
     if destination in router['routingTable']:
         nextHop = router['routingTable'][destination]
@@ -149,13 +153,13 @@ def routeLookup(destination, router):
         return (None, None)
 
 # Returns RouterID by Interface IP address which it belongs to.
-def getRIDByInterface(interface):
-    if interface in GLOBAL_INTERFACE_TREE:
-        return GLOBAL_INTERFACE_TREE[interface][0]
+def get_rid_by_interface_ip(interface_ip):
+    if interface_ip in GLOBAL_INTERFACE_TREE:
+        return GLOBAL_INTERFACE_TREE[interface_ip][0]
 
 # Check if nexthop points to local interface.
 # Valid for Connected and Local route strings.
-def nextHopIsLocal(nextHop):
+def nexthop_is_local(nextHop):
     interfaceTypes = ['Eth', 'Fast', 'Gig', 'Ten', 'Port',
                       'Serial', 'Vlan', 'Tunn', 'Loop', 'Null'
     ]
@@ -167,22 +171,22 @@ def nextHopIsLocal(nextHop):
 # Returns tupple of path tupples.
 # Each path tupple contains a sequence of Router IDs.
 # Multiple paths are supported.
-def traceRoute(sourceRouterID, target, path=[]):
+def trace_route(sourceRouterID, target, path=[]):
     if not sourceRouterID:
         return [path + [(None, None)]]
     currentRouter = ROUTERS[sourceRouterID]
-    nextHop, rawRouteString = routeLookup(target, currentRouter)
+    nextHop, rawRouteString = route_lookup(target, currentRouter)
     path = path + [(sourceRouterID, rawRouteString)]
     #print nextHop
     paths = []
     if nextHop:
-        if nextHopIsLocal(nextHop[0]):
+        if nexthop_is_local(nextHop[0]):
             return [path]
 
         for nh in nextHop:
-            nextHopRID = getRIDByInterface(nh)
+            nextHopRID = get_rid_by_interface_ip(nh)
             if not nextHopRID in path:
-                innerPath = traceRoute(nextHopRID, target, path)
+                innerPath = trace_route(nextHopRID, target, path)
                 for p in innerPath:
                     paths.append(p)
     else:
@@ -209,7 +213,7 @@ for FILENAME in os.listdir(RT_DIRECTORY):
         with open(os.path.join(RT_DIRECTORY, FILENAME), 'r') as f:
             print 'Opening ', FILENAME
             rawTable = f.read()
-            newRouter = parseShowIPRoute(rawTable)
+            newRouter = parse_show_ip_route_ios_like(rawTable)
             routerID = FILENAME.replace('.txt', '')
             if newRouter:
                 ROUTERS[routerID] = newRouter
@@ -244,7 +248,7 @@ while True:
     for rtr in ROUTERS.keys():
         
         subsearchstarttime = time()
-        result = traceRoute(rtr, targetSubnet)
+        result = trace_route(rtr, targetSubnet)
 
         if result:
             print "\n"
