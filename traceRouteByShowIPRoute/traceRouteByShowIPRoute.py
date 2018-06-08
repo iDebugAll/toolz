@@ -195,42 +195,52 @@ def trace_route(source_router_id, target_ip, path=[]):
     return paths
 
 
-# Begin execution.
-
-if not os.path.exists(RT_DIRECTORY):
-    exit("%s directory does not exist. Check RT_DIRECTORY variable value." % RT_DIRECTORY)
-
-print("Initializing files...")
-start_time = time()
-
 # Go through RT_DIRECTORY and parse all .txt files.
 # Generate router objects based on parse result if any.
 # Populate ROUTERS with those router objects.
 # Default key for each router object is FILENAME.
 #
-for FILENAME in os.listdir(RT_DIRECTORY):
-    if FILENAME.endswith('.txt'):
-        file_init_start_time = time()
-        with open(os.path.join(RT_DIRECTORY, FILENAME), 'r') as f:
-            print ('Opening ', FILENAME)
-            raw_table = f.read()
-            newRouter = parse_show_ip_route_ios_like(raw_table)
-            router_id = FILENAME.replace('.txt', '')
-            if newRouter:
-                ROUTERS[router_id] = newRouter
-                if newRouter['interface_list']:
-                    for iface, addr in newRouter['interface_list']:
-                        GLOBAL_INTERFACE_TREE[addr]= (router_id, iface,)
-            else:
-                print ('Failed to parse ' + FILENAME)
-        print (FILENAME + " parsing has been completed in %s sec" % (
-               "{:.3f}".format(time() - file_init_start_time),)
-        )
-else:
-    if not ROUTERS:
-        exit ("Could not find any valid .txt files with routing tables in %s directory" % RT_DIRECTORY)
-    print ("\nAll files have been initialized in %s sec" % ("{:.3f}".format(time() - start_time),))
+def do_parse_directory(rt_directory):
+    new_routers = {}
+    if not os.path.isdir(rt_directory):
+        print("%s directory does not exist. Check rt_directory variable value." % rt_directory)
+        return None
+    start_time = time()
+    print("Initializing files...")
+    for FILENAME in os.listdir(rt_directory):
+        if FILENAME.endswith('.txt'):
+            file_init_start_time = time()
+            with open(os.path.join(rt_directory, FILENAME), 'r') as f:
+                print ('Opening ', FILENAME)
+                raw_table = f.read()
+                new_router = parse_show_ip_route_ios_like(raw_table)
+                router_id = FILENAME.replace('.txt', '')
+                if new_router:
+                    new_routers[router_id] = new_router
+                    if new_router['interface_list']:
+                        for iface, addr in new_router['interface_list']:
+                            GLOBAL_INTERFACE_TREE[addr]= (router_id, iface,)
+                else:
+                    print ('Failed to parse ' + FILENAME)
+            print (FILENAME + " parsing has been completed in %s sec" % (
+                   "{:.3f}".format(time() - file_init_start_time),)
+            )
+    else:
+        if not new_routers:
+            print ("Could not find any valid .txt files with routing tables in %s directory" % rt_directory)
+            print ("\nAll files have been initialized in %s sec" % ("{:.3f}".format(time() - start_time),))
+        else:
+            return new_routers
 
+
+
+# Begin execution.
+
+ROUTERS = do_parse_directory(RT_DIRECTORY)
+if not ROUTERS:
+    exit()
+
+print ROUTERS
 
 # Now ready to perform search based on initialized files.
 # Ask for Target and perform path search from each router.
