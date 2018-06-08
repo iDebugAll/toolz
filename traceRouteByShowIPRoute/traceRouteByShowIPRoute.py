@@ -269,17 +269,15 @@ def do_user_interactive_search():
             )
 
 
-# Begin execution.
+def main():
+    ROUTERS = do_parse_directory(RT_DIRECTORY)
+    if ROUTERS:
+        do_user_interactive_search()
 
-ROUTERS = do_parse_directory(RT_DIRECTORY)
-if not ROUTERS:
-    exit()
 
-do_user_interactive_search()
-# Now ready to perform search based on initialized files.
-# Ask for Target and perform path search from each router.
-# Print all available paths.
-#
+if __name__ == "__main__":
+    main() 
+
 
 
 
