@@ -185,10 +185,13 @@ def trace_route(sourceRouterID, target, path=[]):
 
         for nh in nextHop:
             nextHopRID = get_rid_by_interface_ip(nh)
-            if not nextHopRID in path:
+            if not nextHopRID in [r[0] for r in path]:
                 innerPath = trace_route(nextHopRID, target, path)
                 for p in innerPath:
                     paths.append(p)
+            else:
+                path = path + [(nextHopRID+"<<LOOP DETECTED", None)]
+                return [path]
     else:
         return [path]
     return paths
