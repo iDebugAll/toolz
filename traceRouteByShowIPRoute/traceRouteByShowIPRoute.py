@@ -59,8 +59,8 @@ REGEXP_VIA_PORTION = re.compile(
 # Format:
 #
 # ROUTERS = {
-#     'RID1': {'routingTable': {}, 'interfaceList': ()},
-#     'RID_N': {'routingTable': {}, 'interfaceList': ()},
+#     'RID1': {'routing_table': {}, 'interface_list': ()},
+#     'RID_N': {'routing_table': {}, 'interface_list': ()},
 # }
 # 
 ROUTERS = {}
@@ -73,57 +73,57 @@ GLOBAL_INTERFACE_TREE = SubnetTree.SubnetTree()
 
 
 # Parser for routing table text output.
-# Builds internal SubnetTree search tree in 'routeTree' object.
-# routeTree key is Network Prefix, value is list of nexthops.
+# Builds internal SubnetTree search tree in 'route_tree' object.
+# route_tree key is Network Prefix, value is list of next_hops.
 #
 # Returns 'router' dictionary object.
 # Format:
 # 
 # router = {
-#   'routingTable': routeTree
+#   'routing_table': route_tree
 # }
 #
 # Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
 # and Cisco ASA 'show route' output format.
-def parse_show_ip_route_ios_like(showIPRouteOutput):
+def parse_show_ip_route_ios_like(raw_routing_table):
     router = {}
-    routeTree = SubnetTree.SubnetTree()
-    interfaceList = []
+    route_tree = SubnetTree.SubnetTree()
+    interface_list = []
     # Parse Local and Connected route strings in text.
-    for rawRouteString in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(showIPRouteOutput):
+    for raw_route_string in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(raw_routing_table):
         subnet = (
-            rawRouteString.group('ipaddress') 
+            raw_route_string.group('ipaddress') 
           + convert_netmask_to_prefix_length(
-                rawRouteString.group('maskOrPrefixLength')
+                raw_route_string.group('maskOrPrefixLength')
             )
         )
-        interface = rawRouteString.group('interface')
-        routeTree[subnet] = ((interface,), rawRouteString.group(0))
-        if rawRouteString.group('routeType') == 'L':
-            interfaceList.append((interface, subnet,))
-    if not interfaceList:
+        interface = raw_route_string.group('interface')
+        route_tree[subnet] = ((interface,), raw_route_string.group(0))
+        if raw_route_string.group('routeType') == 'L':
+            interface_list.append((interface, subnet,))
+    if not interface_list:
         print('Failed to find routing table entries in given output')
         return None
     # parse static and dynamic route strings in text
-    for rawRouteString in REGEXP_ROUTE.finditer(showIPRouteOutput):
+    for raw_route_string in REGEXP_ROUTE.finditer(raw_routing_table):
         subnet = (
-            rawRouteString.group('subnet') 
+            raw_route_string.group('subnet') 
           + convert_netmask_to_prefix_length(
-                rawRouteString.group('maskOrPrefixLength')
+                raw_route_string.group('maskOrPrefixLength')
             )
         )
-        viaPortion =  rawRouteString.group('viaPortion')
-        nextHops= []
-        if viaPortion.count('via') > 1:
-            for line in viaPortion.split('\n'):
+        via_portion =  raw_route_string.group('viaPortion')
+        next_hops= []
+        if via_portion.count('via') > 1:
+            for line in via_portion.splitlines():
                 if line:
-                    nextHops.append(REGEXP_VIA_PORTION.match(line).group(1))
+                    next_hops.append(REGEXP_VIA_PORTION.match(line).group(1))
         else:
-            nextHops.append(REGEXP_VIA_PORTION.match(viaPortion).group(1))
-        routeTree[subnet] = (nextHops, rawRouteString.group(0))
+            next_hops.append(REGEXP_VIA_PORTION.match(via_portion).group(1))
+        route_tree[subnet] = (next_hops, raw_route_string.group(0))
     router = {
-        'routingTable': routeTree,
-        'interfaceList': interfaceList,
+        'routing_table': route_tree,
+        'interface_list': interface_list,
     }
     return router
 
@@ -144,11 +144,11 @@ def convert_netmask_to_prefix_length(mask_or_pref):
         )
     return ""
 
-# Performs routeTree lookup in passed router object for passed destination subnet.
-# Returns list of nexthops.
+# Performs route_tree lookup in passed router object for passed destination subnet.
+# Returns list of next_hops.
 def route_lookup(destination, router):
-    if destination in router['routingTable']:
-        return router['routingTable'][destination]
+    if destination in router['routing_table']:
+        return router['routing_table'][destination]
     else:
         return (None, None)
 
@@ -159,38 +159,36 @@ def get_rid_by_interface_ip(interface_ip):
 
 # Check if nexthop points to local interface.
 # Valid for Connected and Local route strings.
-def nexthop_is_local(nextHop):
-    interfaceTypes = ['Eth', 'Fast', 'Gig', 'Ten', 'Port',
+def nexthop_is_local(next_hop):
+    interface_types = ('Eth', 'Fast', 'Gig', 'Ten', 'Port',
                       'Serial', 'Vlan', 'Tunn', 'Loop', 'Null'
-    ]
-    for type in interfaceTypes:
-        if nextHop.startswith(type):
+    )
+    for type in interface_types:
+        if next_hop.startswith(type):
             return True
 
 # Performs recursive path search from source Router ID (RID) to target subnet.
 # Returns tupple of path tupples.
 # Each path tupple contains a sequence of Router IDs.
 # Multiple paths are supported.
-def trace_route(sourceRouterID, target, path=[]):
-    if not sourceRouterID:
+def trace_route(source_router_id, target_ip, path=[]):
+    if not source_router_id:
         return [path + [(None, None)]]
-    currentRouter = ROUTERS[sourceRouterID]
-    nextHop, rawRouteString = route_lookup(target, currentRouter)
-    path = path + [(sourceRouterID, rawRouteString)]
-    #print nextHop
+    current_router = ROUTERS[source_router_id]
+    next_hop, raw_route_string = route_lookup(target_ip, current_router)
+    path = path + [(source_router_id, raw_route_string)]
     paths = []
-    if nextHop:
-        if nexthop_is_local(nextHop[0]):
+    if next_hop:
+        if nexthop_is_local(next_hop[0]):
             return [path]
-
-        for nh in nextHop:
-            nextHopRID = get_rid_by_interface_ip(nh)
-            if not nextHopRID in [r[0] for r in path]:
-                innerPath = trace_route(nextHopRID, target, path)
+        for nh in next_hop:
+            next_hop_rid = get_rid_by_interface_ip(nh)
+            if not next_hop_rid in [r[0] for r in path]:
+                innerPath = trace_route(next_hop_rid, target_ip, path)
                 for p in innerPath:
                     paths.append(p)
             else:
-                path = path + [(nextHopRID+"<<LOOP DETECTED", None)]
+                path = path + [(next_hop_rid+"<<LOOP DETECTED", None)]
                 return [path]
     else:
         return [path]
@@ -203,7 +201,7 @@ if not os.path.exists(RT_DIRECTORY):
     exit("%s directory does not exist. Check RT_DIRECTORY variable value." % RT_DIRECTORY)
 
 print("Initializing files...")
-starttime = time()
+start_time = time()
 
 # Go through RT_DIRECTORY and parse all .txt files.
 # Generate router objects based on parse result if any.
@@ -212,24 +210,26 @@ starttime = time()
 #
 for FILENAME in os.listdir(RT_DIRECTORY):
     if FILENAME.endswith('.txt'):
-        fileinitstarttime = time()
+        file_init_start_time = time()
         with open(os.path.join(RT_DIRECTORY, FILENAME), 'r') as f:
-            print 'Opening ', FILENAME
-            rawTable = f.read()
-            newRouter = parse_show_ip_route_ios_like(rawTable)
-            routerID = FILENAME.replace('.txt', '')
+            print ('Opening ', FILENAME)
+            raw_table = f.read()
+            newRouter = parse_show_ip_route_ios_like(raw_table)
+            router_id = FILENAME.replace('.txt', '')
             if newRouter:
-                ROUTERS[routerID] = newRouter
-                if newRouter['interfaceList']:
-                    for iface, addr in newRouter['interfaceList']:
-                        GLOBAL_INTERFACE_TREE[addr]= (routerID, iface,)
+                ROUTERS[router_id] = newRouter
+                if newRouter['interface_list']:
+                    for iface, addr in newRouter['interface_list']:
+                        GLOBAL_INTERFACE_TREE[addr]= (router_id, iface,)
             else:
                 print ('Failed to parse ' + FILENAME)
-        print FILENAME + " parsing has been completed in %s sec" % ("{:.3f}".format(time() - fileinitstarttime),)
+        print (FILENAME + " parsing has been completed in %s sec" % (
+               "{:.3f}".format(time() - file_init_start_time),)
+        )
 else:
     if not ROUTERS:
         exit ("Could not find any valid .txt files with routing tables in %s directory" % RT_DIRECTORY)
-    print "\nAll files have been initialized in %s sec" % ("{:.3f}".format(time() - starttime),)
+    print ("\nAll files have been initialized in %s sec" % ("{:.3f}".format(time() - start_time),))
 
 
 # Now ready to perform search based on initialized files.
@@ -237,40 +237,35 @@ else:
 # Print all available paths.
 #
 while True:
-
-    print '\n'
-    targetSubnet = raw_input('Enter Target Subnet or Host: ')
-
-    if not targetSubnet:
+    print ('\n')
+    target_subnet = raw_input('Enter Target Subnet or Host: ')
+    if not target_subnet:
         continue
-    if not REGEXP_INPUT_IPv4.match(targetSubnet.replace(' ', '')):
-        print "incorrect input"
+    if not REGEXP_INPUT_IPv4.match(target_subnet.replace(' ', '')):
+        print ("incorrect input")
         continue
-
-    lookupstarttime = time()
+    lookup_start_time = time()
     for rtr in ROUTERS.keys():
-        
-        subsearchstarttime = time()
-        result = trace_route(rtr, targetSubnet)
-
+        subsearch_start_time = time()
+        result = trace_route(rtr, target_subnet)
         if result:
-            print "\n"
-            print "PATHS TO %s FROM %s" % (targetSubnet, rtr)
+            print ("\n")
+            print ("PATHS TO %s FROM %s" % (target_subnet, rtr))
             n = 1
-            print 'Detailed info:'
+            print ('Detailed info:')
             for r in result:
-                print "Path %s:" % n
-                print [h[0] for h in r]
+                print ("Path %s:" % n)
+                print ([h[0] for h in r])
                 for hop in r:
-                    print "ROUTER:", hop[0]
-                    print "Matched route string: \n", hop[1]
+                    print ("ROUTER: %s" % hop[0])
+                    print ("Matched route string: \n%s" % hop[1])
                 else:
-                    print '\n'
+                    print ('\n')
                 n+=1
             else:
-                print "Path search on %s has been completed in %s sec" % (rtr, "{:.3f}".format(time() - subsearchstarttime))
+                print ("Path search on %s has been completed in %s sec" % (rtr, "{:.3f}".format(time() - subsearch_start_time)))
     else:
-        print "\nFull search has been completed in %s sec" % ("{:.3f}".format(time() - lookupstarttime),)
+        print ("\nFull search has been completed in %s sec" % ("{:.3f}".format(time() - lookup_start_time),))
 
 
 
