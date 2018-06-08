@@ -232,6 +232,41 @@ def do_parse_directory(rt_directory):
         else:
             return new_routers
 
+def do_user_interactive_search():
+    while True:
+        print ('\n')
+        target_subnet = raw_input('Enter Target Subnet or Host: ')
+        if not target_subnet:
+            continue
+        if not REGEXP_INPUT_IPv4.match(target_subnet.replace(' ', '')):
+            print ("incorrect input")
+            continue
+        lookup_start_time = time()
+        for rtr in ROUTERS.keys():
+            subsearch_start_time = time()
+            result = trace_route(rtr, target_subnet)
+            if result:
+                print ("\n")
+                print ("PATHS TO %s FROM %s" % (target_subnet, rtr))
+                n = 1
+                print ('Detailed info:')
+                for r in result:
+                    print ("Path %s:" % n)
+                    print ([h[0] for h in r])
+                    for hop in r:
+                        print ("ROUTER: %s" % hop[0])
+                        print ("Matched route string: \n%s" % hop[1])
+                    else:
+                        print ('\n')
+                    n+=1
+                else:
+                    print ("Path search on %s has been completed in %s sec" % (
+                           rtr, "{:.3f}".format(time() - subsearch_start_time))
+                    )
+        else:
+            print ("\nFull search has been completed in %s sec" % (
+                   "{:.3f}".format(time() - lookup_start_time),)
+            )
 
 
 # Begin execution.
@@ -240,42 +275,12 @@ ROUTERS = do_parse_directory(RT_DIRECTORY)
 if not ROUTERS:
     exit()
 
-print ROUTERS
-
+do_user_interactive_search()
 # Now ready to perform search based on initialized files.
 # Ask for Target and perform path search from each router.
 # Print all available paths.
 #
-while True:
-    print ('\n')
-    target_subnet = raw_input('Enter Target Subnet or Host: ')
-    if not target_subnet:
-        continue
-    if not REGEXP_INPUT_IPv4.match(target_subnet.replace(' ', '')):
-        print ("incorrect input")
-        continue
-    lookup_start_time = time()
-    for rtr in ROUTERS.keys():
-        subsearch_start_time = time()
-        result = trace_route(rtr, target_subnet)
-        if result:
-            print ("\n")
-            print ("PATHS TO %s FROM %s" % (target_subnet, rtr))
-            n = 1
-            print ('Detailed info:')
-            for r in result:
-                print ("Path %s:" % n)
-                print ([h[0] for h in r])
-                for hop in r:
-                    print ("ROUTER: %s" % hop[0])
-                    print ("Matched route string: \n%s" % hop[1])
-                else:
-                    print ('\n')
-                n+=1
-            else:
-                print ("Path search on %s has been completed in %s sec" % (rtr, "{:.3f}".format(time() - subsearch_start_time)))
-    else:
-        print ("\nFull search has been completed in %s sec" % ("{:.3f}".format(time() - lookup_start_time),))
+
 
 
 
