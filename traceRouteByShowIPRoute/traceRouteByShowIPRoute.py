@@ -127,6 +127,15 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     }
     return router
 
+def parse_text_routing_table(raw_routing_table):
+    """
+    Parser functions wrapper.
+    Add additional parsers for alternative routing table syntaxes here.
+    """
+    router = parse_show_ip_route_ios_like(raw_routing_table)
+    if router:
+        return router
+
 # Gets subnet mask or slashed prefix length
 # Returns slashed prefix length format for subnet mask case.
 # Returns slashed prefix length as is for slashed prefix length case.
@@ -215,7 +224,7 @@ def do_parse_directory(rt_directory):
             with open(os.path.join(rt_directory, FILENAME), 'r') as f:
                 print ('Opening {}'.format(FILENAME))
                 raw_table = f.read()
-                new_router = parse_show_ip_route_ios_like(raw_table)
+                new_router = parse_text_routing_table(raw_table)
                 router_id = FILENAME.replace('.txt', '')
                 if new_router:
                     new_routers[router_id] = new_router
