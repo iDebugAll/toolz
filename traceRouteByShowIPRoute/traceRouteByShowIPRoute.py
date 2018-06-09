@@ -203,7 +203,9 @@ def trace_route(source_router_id, target_ip, path=[]):
 def do_parse_directory(rt_directory):
     new_routers = {}
     if not os.path.isdir(rt_directory):
-        print("%s directory does not exist. Check rt_directory variable value." % rt_directory)
+        print("{} directory does not exist.".format(rt_directory)
+            + "Check rt_directory variable value."
+        )
         return None
     start_time = time()
     print("Initializing files...")
@@ -211,7 +213,7 @@ def do_parse_directory(rt_directory):
         if FILENAME.endswith('.txt'):
             file_init_start_time = time()
             with open(os.path.join(rt_directory, FILENAME), 'r') as f:
-                print ('Opening ', FILENAME)
+                print ('Opening {}'.format(FILENAME))
                 raw_table = f.read()
                 new_router = parse_show_ip_route_ios_like(raw_table)
                 router_id = FILENAME.replace('.txt', '')
@@ -222,14 +224,18 @@ def do_parse_directory(rt_directory):
                             GLOBAL_INTERFACE_TREE[addr]= (router_id, iface,)
                 else:
                     print ('Failed to parse ' + FILENAME)
-            print (FILENAME + " parsing has been completed in %s sec" % (
-                   "{:.3f}".format(time() - file_init_start_time),)
+            print (FILENAME + " parsing has been completed in %s sec".format(
+                   "{:.3f}".format(time() - file_init_start_time))
             )
     else:
         if not new_routers:
-            print ("Could not find any valid .txt files with routing tables in %s directory" % rt_directory)
-            print ("\nAll files have been initialized in %s sec" % ("{:.3f}".format(time() - start_time),))
+            print ("Could not find any valid .txt files with routing tables"
+                 + " in {} directory".format(rt_directory)
+            )
         else:
+            print ("\nAll files have been initialized"
+                 + " in {} sec".format("{:.3f}".format(time() - start_time))
+            )
             return new_routers
 
 def do_user_interactive_search():
@@ -247,24 +253,24 @@ def do_user_interactive_search():
             result = trace_route(rtr, target_subnet)
             if result:
                 print ("\n")
-                print ("PATHS TO %s FROM %s" % (target_subnet, rtr))
+                print ("PATHS TO {} FROM {}".format(target_subnet, rtr))
                 n = 1
                 print ('Detailed info:')
                 for r in result:
-                    print ("Path %s:" % n)
+                    print ("Path {}:".format(n))
                     print ([h[0] for h in r])
                     for hop in r:
-                        print ("ROUTER: %s" % hop[0])
-                        print ("Matched route string: \n%s" % hop[1])
+                        print ("ROUTER: {}".format(hop[0]))
+                        print ("Matched route string: \n{}".format(hop[1]))
                     else:
                         print ('\n')
                     n+=1
                 else:
-                    print ("Path search on %s has been completed in %s sec" % (
+                    print ("Path search on {} has been completed in {} sec".format(
                            rtr, "{:.3f}".format(time() - subsearch_start_time))
                     )
         else:
-            print ("\nFull search has been completed in %s sec" % (
+            print ("\nFull search has been completed in {} sec".format(
                    "{:.3f}".format(time() - lookup_start_time),)
             )
 
