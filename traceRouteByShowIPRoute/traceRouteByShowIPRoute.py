@@ -270,6 +270,7 @@ def do_user_interactive_search():
 
 
 def main():
+    global ROUTERS
     ROUTERS = do_parse_directory(RT_DIRECTORY)
     if ROUTERS:
         do_user_interactive_search()
