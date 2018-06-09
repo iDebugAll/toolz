@@ -71,21 +71,17 @@ ROUTERS = {}
 # Interface IP addresses SHOULD be globally unique across inspected topology.
 GLOBAL_INTERFACE_TREE = SubnetTree.SubnetTree()
 
-
-# Parser for routing table text output.
-# Builds internal SubnetTree search tree in 'route_tree' object.
-# route_tree key is Network Prefix, value is list of next_hops.
-#
-# Returns 'router' dictionary object.
-# Format:
-# 
-# router = {
-#   'routing_table': route_tree
-# }
-#
-# Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
-# and Cisco ASA 'show route' output format.
+    
 def parse_show_ip_route_ios_like(raw_routing_table):
+    """
+    Parser for routing table text output.
+    Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
+    and Cisco ASA 'show route' output format.
+    Processes input text file and writes into Python data structures.
+    Builds internal SubnetTree search tree in 'route_tree'.
+    Generates local interface list for router in 'interface_list'
+    Returns 'router' dictionary object with parsed data.
+    """
     router = {}
     route_tree = SubnetTree.SubnetTree()
     interface_list = []
@@ -136,11 +132,13 @@ def parse_text_routing_table(raw_routing_table):
     if router:
         return router
 
-# Gets subnet mask or slashed prefix length
-# Returns slashed prefix length format for subnet mask case.
-# Returns slashed prefix length as is for slashed prefix length case.
-# Returns "" for empty input.
 def convert_netmask_to_prefix_length(mask_or_pref):
+    """
+    Gets subnet_mask (XXX.XXX.XXX.XXX) of /prefix_length (/XX).
+    For subnet_mask, converts it to /prefix_length and returns result.
+    For /prefix_length, returns as is.
+    For empty input, returns "" string.
+    """
     if not mask_or_pref:
         return ""
     if re.match("^\/\d\d?$", mask_or_pref):
@@ -153,22 +151,29 @@ def convert_netmask_to_prefix_length(mask_or_pref):
         )
     return ""
 
-# Performs route_tree lookup in passed router object for passed destination subnet.
-# Returns list of next_hops.
 def route_lookup(destination, router):
+    """
+    Performs route_tree lookup in passed router object
+    for passed destination subnet.
+    Returns list of next_hops with original route strings or (None,None)
+    depending on lookup result.
+    """
     if destination in router['routing_table']:
         return router['routing_table'][destination]
     else:
         return (None, None)
 
-# Returns RouterID by Interface IP address which it belongs to.
+
 def get_rid_by_interface_ip(interface_ip):
+    """Returns RouterID by Interface IP address which it belongs to."""
     if interface_ip in GLOBAL_INTERFACE_TREE:
         return GLOBAL_INTERFACE_TREE[interface_ip][0]
 
-# Check if nexthop points to local interface.
-# Valid for Connected and Local route strings.
 def nexthop_is_local(next_hop):
+    """
+    Check if nexthop points to local interface.
+    Will be True for Connected and Local route strings on Cisco devices.
+    """
     interface_types = ('Eth', 'Fast', 'Gig', 'Ten', 'Port',
                       'Serial', 'Vlan', 'Tunn', 'Loop', 'Null'
     )
@@ -176,11 +181,13 @@ def nexthop_is_local(next_hop):
         if next_hop.startswith(type):
             return True
 
-# Performs recursive path search from source Router ID (RID) to target subnet.
-# Returns tupple of path tupples.
-# Each path tupple contains a sequence of Router IDs.
-# Multiple paths are supported.
 def trace_route(source_router_id, target_ip, path=[]):
+    """
+    Performs recursive path search from source Router ID (RID) to target subnet.
+    Returns tupple of path tupples.
+    Each path tupple contains a sequence of Router IDs with matched route strings.
+    Multiple paths are supported.
+    """
     if not source_router_id:
         return [path + [(None, None)]]
     current_router = ROUTERS[source_router_id]
@@ -204,12 +211,15 @@ def trace_route(source_router_id, target_ip, path=[]):
     return paths
 
 
-# Go through RT_DIRECTORY and parse all .txt files.
-# Generate router objects based on parse result if any.
-# Populate ROUTERS with those router objects.
-# Default key for each router object is FILENAME.
-#
+
 def do_parse_directory(rt_directory):
+    """
+    Go through specified directory and parse all .txt files.
+    Generate router objects based on parse result if any.
+    Populate new_routers with those router objects.
+    Default key for each router object is FILENAME.
+    Return new_routers.
+    """
     new_routers = {}
     if not os.path.isdir(rt_directory):
         print("{} directory does not exist.".format(rt_directory)
@@ -248,6 +258,14 @@ def do_parse_directory(rt_directory):
             return new_routers
 
 def do_user_interactive_search():
+    """
+    Provides interactive search dialog for user.
+    Asks user for target subnet or host in CIDR notation.
+    Validates input. Prints error and goes back to start for invalid input.
+    Executes path search to given target from each router in global ROUTERS.
+    Prints formatted path search result.
+    Goes back to start.
+    """
     while True:
         print ('\n')
         target_subnet = raw_input('Enter Target Subnet or Host: ')
