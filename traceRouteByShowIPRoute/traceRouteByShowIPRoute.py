@@ -243,7 +243,7 @@ def do_parse_directory(rt_directory):
                             GLOBAL_INTERFACE_TREE[addr]= (router_id, iface,)
                 else:
                     print ('Failed to parse ' + FILENAME)
-            print (FILENAME + " parsing has been completed in %s sec".format(
+            print (FILENAME + " parsing has been completed in {} sec".format(
                    "{:.3f}".format(time() - file_init_start_time))
             )
     else:
