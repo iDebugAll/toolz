@@ -9,8 +9,6 @@ D EX     10.1.198.0/24 [170/1683712] via 172.16.209.47, 1w2d, Vlan910
                        [170/1683712] via 172.16.60.33, 1w2d, Vlan60
                        [170/1683712] via 10.25.20.132, 1w2d, Vlan220
                        [170/1683712] via 10.25.20.9, 1w2d, Vlan20
-     2.0.0.0/24 is subnetted, 1 subnets
-S       2.2.2.0 is directly connected, FastEthernet0/0
      4.0.0.0/16 is subnetted, 1 subnets
 O E2    4.4.0.0 [110/20] via 194.0.0.2, 00:02:00, FastEthernet0/0
      5.0.0.0/24 is subnetted, 1 subnets
