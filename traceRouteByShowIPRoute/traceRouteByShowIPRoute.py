@@ -200,8 +200,8 @@ def trace_route(source_router_id, target_ip, path=[]):
         for nh in next_hop:
             next_hop_rid = get_rid_by_interface_ip(nh)
             if not next_hop_rid in [r[0] for r in path]:
-                innerPath = trace_route(next_hop_rid, target_ip, path)
-                for p in innerPath:
+                inner_path = trace_route(next_hop_rid, target_ip, path)
+                for p in inner_path:
                     paths.append(p)
             else:
                 path = path + [(next_hop_rid+"<<LOOP DETECTED", None)]
@@ -209,8 +209,6 @@ def trace_route(source_router_id, target_ip, path=[]):
     else:
         return [path]
     return paths
-
-
 
 def do_parse_directory(rt_directory):
     """
@@ -310,7 +308,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
 
 
 
