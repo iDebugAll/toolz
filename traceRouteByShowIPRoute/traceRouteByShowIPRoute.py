@@ -184,8 +184,8 @@ def nexthop_is_local(next_hop):
 def trace_route(source_router_id, target_ip, path=[]):
     """
     Performs recursive path search from source Router ID (RID) to target subnet.
-    Returns tupple of path tupples.
-    Each path tupple contains a sequence of Router IDs with matched route strings.
+    Returns tuple of path tuples.
+    Each path tuple contains a sequence of Router IDs with matched route strings.
     Multiple paths are supported.
     """
     if not source_router_id:
