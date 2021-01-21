@@ -1,7 +1,7 @@
 
 import os
 import re
-import SubnetTree
+import pytricia
 from time import time
 
 
@@ -69,8 +69,8 @@ ROUTERS = {}
 # Stores Interface IP addresses as keys.
 # Returns (RID, interfaceID) list.
 # Interface IP addresses SHOULD be globally unique across inspected topology.
-GLOBAL_INTERFACE_TREE = SubnetTree.SubnetTree()
 
+GLOBAL_INTERFACE_TREE = pytricia.PyTricia()
     
 def parse_show_ip_route_ios_like(raw_routing_table):
     """
@@ -83,7 +83,7 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     Returns 'router' dictionary object with parsed data.
     """
     router = {}
-    route_tree = SubnetTree.SubnetTree()
+    route_tree = pytricia.PyTricia()
     interface_list = []
     # Parse Local and Connected route strings in text.
     for raw_route_string in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(raw_routing_table):
@@ -266,7 +266,7 @@ def do_user_interactive_search():
     """
     while True:
         print ('\n')
-        target_subnet = raw_input('Enter Target Subnet or Host: ')
+        target_subnet = input('Enter Target Subnet or Host: ')
         if not target_subnet:
             continue
         if not REGEXP_INPUT_IPv4.match(target_subnet.replace(' ', '')):
