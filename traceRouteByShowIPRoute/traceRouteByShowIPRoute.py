@@ -11,44 +11,44 @@ RT_DIRECTORY = "./routing_tables"
 
 # RegEx template string for IPv4 address matching. 
 REGEXP_IPv4_STR = (
-      '((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-    + '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-    + '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-    + '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))'
+    r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+    + r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+    + r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+    + r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))'
 )
 
 # IPv4 CIDR notation matching in user input.
-REGEXP_INPUT_IPv4 = re.compile("^" + REGEXP_IPv4_STR + "(\/\d\d?)?$")
+REGEXP_INPUT_IPv4 = re.compile(r"^" + REGEXP_IPv4_STR + r"(\/\d\d?)?$")
 
 # Local and Connected route strings matching.
 REGEXP_ROUTE_LOCAL_CONNECTED = re.compile(
-     '^(?P<routeType>[L|C])\s+'
-    + '((?P<ipaddress>\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)'
-    + '\s?'
-    + '(?P<maskOrPrefixLength>(\/\d\d?)?'
-    + '|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
-    + '\ is\ directly\ connected\,\ '
-    + '(?P<interface>\S+)',
+    r'^(?P<routeType>[L|C])\s+'
+    + r'((?P<ipaddress>\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)'
+    + r'\s?'
+    + r'(?P<maskOrPrefixLength>(\/\d\d?)?'
+    + r'|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
+    + r'\ is\ directly\ connected\,\ '
+    + r'(?P<interface>\S+)',
     re.MULTILINE
 )
 
 # Static and dynamic route strings matching.
 REGEXP_ROUTE = re.compile(
-      '^(\S\S?\*?\s?\S?\S?)'
-    + '\s+'
-    + '((?P<subnet>\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)'
-    + '\s?'
-    + '(?P<maskOrPrefixLength>(\/\d\d?)?'
-    +'|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
-    + '\s*'
-    + '(?P<viaPortion>(?:\n?\s+(\[\d\d?\d?\/\d+\])\s+'
-    + 'via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)(.*)\n?)+)',
+    r'^(\S\S?\*?\s?\S?\S?)'
+    + r'\s+'
+    + r'((?P<subnet>\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)'
+    + r'\s?'
+    + r'(?P<maskOrPrefixLength>(\/\d\d?)?'
+    + r'|(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)?))'
+    + r'\s*'
+    + r'(?P<viaPortion>(?:\n?\s+(\[\d\d?\d?\/\d+\])\s+'
+    + r'via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?)(.*)\n?)+)',
     re.MULTILINE
 )
 
 # Route string VIA portion matching.
 REGEXP_VIA_PORTION = re.compile(
-    '.*via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?).*'
+    r'.*via\s+(\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?).*'
 )
 
 
