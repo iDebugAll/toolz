@@ -78,7 +78,7 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
     and Cisco ASA 'show route' output format.
     Processes input text file and writes into Python data structures.
-    Builds internal SubnetTree search tree in 'route_tree'.
+    Builds internal PyTricia search tree in 'route_tree'.
     Generates local interface list for router in 'interface_list'
     Returns 'router' dictionary object with parsed data.
     """
