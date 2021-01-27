@@ -9,7 +9,7 @@ from time import time
 # Each routing table MUST be in separate .txt file.
 RT_DIRECTORY = "./routing_tables"
 
-# RegEx template string for IPv4 address matching. 
+# RegEx template string for IPv4 address matching.
 REGEXP_IPv4_STR = (
     r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
     + r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
@@ -52,7 +52,7 @@ REGEXP_VIA_PORTION = re.compile(
 )
 
 
-# Store for 'router' objects generated from input routing table files. 
+# Store for 'router' objects generated from input routing table files.
 # Each file is represented by single 'router' object.
 # Router is referenced by Router ID (RID).
 # RID is filename by default.
@@ -62,20 +62,20 @@ REGEXP_VIA_PORTION = re.compile(
 #     'RID1': {'routing_table': {}, 'interface_list': ()},
 #     'RID_N': {'routing_table': {}, 'interface_list': ()},
 # }
-# 
+#
 ROUTERS = {}
 
 # Global search tree for Interface IP address to Router ID (RID) resolving.
 # Stores Interface IP addresses as keys.
 # Returns (RID, interfaceID) list.
 # Interface IP addresses SHOULD be globally unique across inspected topology.
-
 GLOBAL_INTERFACE_TREE = pytricia.PyTricia()
-    
+
+
 def parse_show_ip_route_ios_like(raw_routing_table):
     """
     Parser for routing table text output.
-    Compatible with both Cisco IOS(IOS-XE) 'show ip route' 
+    Compatible with both Cisco IOS(IOS-XE) 'show ip route'
     and Cisco ASA 'show route' output format.
     Processes input text file and writes into Python data structures.
     Builds internal PyTricia search tree in 'route_tree'.
@@ -88,8 +88,8 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     # Parse Local and Connected route strings in text.
     for raw_route_string in REGEXP_ROUTE_LOCAL_CONNECTED.finditer(raw_routing_table):
         subnet = (
-            raw_route_string.group('ipaddress') 
-          + convert_netmask_to_prefix_length(
+            raw_route_string.group('ipaddress')
+            + convert_netmask_to_prefix_length(
                 raw_route_string.group('maskOrPrefixLength')
             )
         )
@@ -103,13 +103,13 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     # parse static and dynamic route strings in text
     for raw_route_string in REGEXP_ROUTE.finditer(raw_routing_table):
         subnet = (
-            raw_route_string.group('subnet') 
-          + convert_netmask_to_prefix_length(
+            raw_route_string.group('subnet')
+            + convert_netmask_to_prefix_length(
                 raw_route_string.group('maskOrPrefixLength')
             )
         )
-        via_portion =  raw_route_string.group('viaPortion')
-        next_hops= []
+        via_portion = raw_route_string.group('viaPortion')
+        next_hops = []
         if via_portion.count('via') > 1:
             for line in via_portion.splitlines():
                 if line:
@@ -123,6 +123,7 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     }
     return router
 
+
 def parse_text_routing_table(raw_routing_table):
     """
     Parser functions wrapper.
@@ -131,6 +132,7 @@ def parse_text_routing_table(raw_routing_table):
     router = parse_show_ip_route_ios_like(raw_routing_table)
     if router:
         return router
+
 
 def convert_netmask_to_prefix_length(mask_or_pref):
     """
@@ -141,15 +143,16 @@ def convert_netmask_to_prefix_length(mask_or_pref):
     """
     if not mask_or_pref:
         return ""
-    if re.match("^\/\d\d?$", mask_or_pref):
+    if re.match(r"^\/\d\d?$", mask_or_pref):
         return mask_or_pref
-    if re.match("^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$",
+    if re.match(r"^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$",
                 mask_or_pref):
         return (
             "/"
-           + str(sum([bin(int(x)).count("1") for x in mask_or_pref.split(".")]))
+            + str(sum([bin(int(x)).count("1") for x in mask_or_pref.split(".")]))
         )
     return ""
+
 
 def route_lookup(destination, router):
     """
@@ -169,17 +172,20 @@ def get_rid_by_interface_ip(interface_ip):
     if interface_ip in GLOBAL_INTERFACE_TREE:
         return GLOBAL_INTERFACE_TREE[interface_ip][0]
 
+
 def nexthop_is_local(next_hop):
     """
     Check if nexthop points to local interface.
     Will be True for Connected and Local route strings on Cisco devices.
     """
-    interface_types = ('Eth', 'Fast', 'Gig', 'Ten', 'Port',
-                      'Serial', 'Vlan', 'Tunn', 'Loop', 'Null'
+    interface_types = (
+        'Eth', 'Fast', 'Gig', 'Ten', 'Port',
+        'Serial', 'Vlan', 'Tunn', 'Loop', 'Null'
     )
     for type in interface_types:
         if next_hop.startswith(type):
             return True
+
 
 def trace_route(source_router_id, target_ip, path=[]):
     """
@@ -199,7 +205,7 @@ def trace_route(source_router_id, target_ip, path=[]):
             return [path]
         for nh in next_hop:
             next_hop_rid = get_rid_by_interface_ip(nh)
-            if not next_hop_rid in [r[0] for r in path]:
+            if next_hop_rid not in [r[0] for r in path]:
                 inner_path = trace_route(next_hop_rid, target_ip, path)
                 for p in inner_path:
                     paths.append(p)
@@ -209,6 +215,7 @@ def trace_route(source_router_id, target_ip, path=[]):
     else:
         return [path]
     return paths
+
 
 def do_parse_directory(rt_directory):
     """
@@ -220,7 +227,8 @@ def do_parse_directory(rt_directory):
     """
     new_routers = {}
     if not os.path.isdir(rt_directory):
-        print("{} directory does not exist.".format(rt_directory)
+        print(
+            "{} directory does not exist.".format(rt_directory)
             + "Check rt_directory variable value."
         )
         return None
@@ -230,7 +238,7 @@ def do_parse_directory(rt_directory):
         if FILENAME.endswith('.txt'):
             file_init_start_time = time()
             with open(os.path.join(rt_directory, FILENAME), 'r') as f:
-                print ('Opening {}'.format(FILENAME))
+                print('Opening {}'.format(FILENAME))
                 raw_table = f.read()
                 new_router = parse_text_routing_table(raw_table)
                 router_id = FILENAME.replace('.txt', '')
@@ -238,22 +246,28 @@ def do_parse_directory(rt_directory):
                     new_routers[router_id] = new_router
                     if new_router['interface_list']:
                         for iface, addr in new_router['interface_list']:
-                            GLOBAL_INTERFACE_TREE[addr]= (router_id, iface,)
+                            GLOBAL_INTERFACE_TREE[addr] = (router_id, iface,)
                 else:
-                    print ('Failed to parse ' + FILENAME)
-            print (FILENAME + " parsing has been completed in {} sec".format(
-                   "{:.3f}".format(time() - file_init_start_time))
+                    print('Failed to parse ' + FILENAME)
+            print(
+                FILENAME
+                + " parsing has been completed in {} sec".format(
+                    "{:.3f}".format(time() - file_init_start_time)
+                )
             )
     else:
         if not new_routers:
-            print ("Could not find any valid .txt files with routing tables"
-                 + " in {} directory".format(rt_directory)
+            print(
+                "Could not find any valid .txt files with routing tables"
+                + " in {} directory".format(rt_directory)
             )
         else:
-            print ("\nAll files have been initialized"
-                 + " in {} sec".format("{:.3f}".format(time() - start_time))
+            print(
+                "\nAll files have been initialized"
+                + " in {} sec".format("{:.3f}".format(time() - start_time))
             )
             return new_routers
+
 
 def do_user_interactive_search():
     """
@@ -265,38 +279,42 @@ def do_user_interactive_search():
     Goes back to start.
     """
     while True:
-        print ('\n')
+        print('\n')
         target_subnet = input('Enter Target Subnet or Host: ')
         if not target_subnet:
             continue
         if not REGEXP_INPUT_IPv4.match(target_subnet.replace(' ', '')):
-            print ("incorrect input")
+            print("incorrect input")
             continue
         lookup_start_time = time()
         for rtr in ROUTERS.keys():
             subsearch_start_time = time()
             result = trace_route(rtr, target_subnet)
             if result:
-                print ("\n")
-                print ("PATHS TO {} FROM {}".format(target_subnet, rtr))
+                print("\n")
+                print("PATHS TO {} FROM {}".format(target_subnet, rtr))
                 n = 1
-                print ('Detailed info:')
+                print('Detailed info:')
                 for r in result:
-                    print ("Path {}:".format(n))
-                    print ([h[0] for h in r])
+                    print("Path {}:".format(n))
+                    print([h[0] for h in r])
                     for hop in r:
-                        print ("ROUTER: {}".format(hop[0]))
-                        print ("Matched route string: \n{}".format(hop[1]))
+                        print("ROUTER: {}".format(hop[0]))
+                        print("Matched route string: \n{}".format(hop[1]))
                     else:
-                        print ('\n')
-                    n+=1
+                        print('\n')
+                    n += 1
                 else:
-                    print ("Path search on {} has been completed in {} sec".format(
-                           rtr, "{:.3f}".format(time() - subsearch_start_time))
+                    print(
+                        "Path search on {} has been completed in {} sec".format(
+                           rtr, "{:.3f}".format(time() - subsearch_start_time)
+                        )
                     )
         else:
-            print ("\nFull search has been completed in {} sec".format(
-                   "{:.3f}".format(time() - lookup_start_time),)
+            print(
+                "\nFull search has been completed in {} sec".format(
+                   "{:.3f}".format(time() - lookup_start_time),
+                )
             )
 
 
@@ -309,18 +327,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
