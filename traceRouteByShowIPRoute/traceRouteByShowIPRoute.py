@@ -6,7 +6,7 @@ from time import time
 
 
 # Path to directory with routing table files.
-# Each routing table MUST be in separate .txt file.
+# Each routing table MUST be in a separate .txt file.
 RT_DIRECTORY = "./routing_tables"
 
 # RegEx template string for IPv4 address matching.
@@ -53,7 +53,7 @@ REGEXP_VIA_PORTION = re.compile(
 
 
 # Store for 'router' objects generated from input routing table files.
-# Each file is represented by single 'router' object.
+# Each file is represented by a single 'router' object.
 # Router is referenced by Router ID (RID).
 # RID is filename by default.
 # Format:
@@ -68,7 +68,7 @@ ROUTERS = {}
 # Global search tree for Interface IP address to Router ID (RID) resolving.
 # Stores Interface IP addresses as keys.
 # Returns (RID, interfaceID) list.
-# Interface IP addresses SHOULD be globally unique across inspected topology.
+# Interface IP addresses SHOULD be globally unique across the inspected topology.
 GLOBAL_INTERFACE_TREE = pytricia.PyTricia()
 
 
@@ -77,9 +77,9 @@ def parse_show_ip_route_ios_like(raw_routing_table):
     Parser for routing table text output.
     Compatible with both Cisco IOS(IOS-XE) 'show ip route'
     and Cisco ASA 'show route' output format.
-    Processes input text file and writes into Python data structures.
+    Processes input text file and write into Python data structures.
     Builds internal PyTricia search tree in 'route_tree'.
-    Generates local interface list for router in 'interface_list'
+    Generates local interface list for a router in 'interface_list'
     Returns 'router' dictionary object with parsed data.
     """
     router = {}
@@ -137,7 +137,7 @@ def parse_text_routing_table(raw_routing_table):
 def convert_netmask_to_prefix_length(mask_or_pref):
     """
     Gets subnet_mask (XXX.XXX.XXX.XXX) of /prefix_length (/XX).
-    For subnet_mask, converts it to /prefix_length and returns result.
+    For subnet_mask, converts it to /prefix_length and returns the result.
     For /prefix_length, returns as is.
     For empty input, returns "" string.
     """
@@ -158,8 +158,8 @@ def route_lookup(destination, router):
     """
     Performs route_tree lookup in passed router object
     for passed destination subnet.
-    Returns list of next_hops with original route strings or (None,None)
-    depending on lookup result.
+    Returns list of next_hops with original route strings or (None, None)
+    depending on the lookup result.
     """
     if destination in router['routing_table']:
         return router['routing_table'][destination]
@@ -175,7 +175,7 @@ def get_rid_by_interface_ip(interface_ip):
 
 def nexthop_is_local(next_hop):
     """
-    Check if nexthop points to local interface.
+    Check if next-hop points to the local interface.
     Will be True for Connected and Local route strings on Cisco devices.
     """
     interface_types = (
@@ -189,7 +189,7 @@ def nexthop_is_local(next_hop):
 
 def trace_route(source_router_id, target_ip, path=[]):
     """
-    Performs recursive path search from source Router ID (RID) to target subnet.
+    Performs recursive path search from source Router ID (RID) to the target subnet.
     Returns tuple of path tuples.
     Each path tuple contains a sequence of Router IDs with matched route strings.
     Multiple paths are supported.
@@ -219,10 +219,10 @@ def trace_route(source_router_id, target_ip, path=[]):
 
 def do_parse_directory(rt_directory):
     """
-    Go through specified directory and parse all .txt files.
+    Go through the specified directory and parse all .txt files.
     Generate router objects based on parse result if any.
     Populate new_routers with those router objects.
-    Default key for each router object is FILENAME.
+    The default key for each router object is FILENAME.
     Return new_routers.
     """
     new_routers = {}
@@ -271,11 +271,11 @@ def do_parse_directory(rt_directory):
 
 def do_user_interactive_search():
     """
-    Provides interactive search dialog for user.
+    Provides interactive search dialog for users.
     Asks user for target subnet or host in CIDR notation.
     Validates input. Prints error and goes back to start for invalid input.
     Executes path search to given target from each router in global ROUTERS.
-    Prints formatted path search result.
+    Prints formatted path search results.
     Goes back to start.
     """
     while True:
